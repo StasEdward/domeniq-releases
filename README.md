@@ -1,8 +1,8 @@
-# Domeniq for Windows
+# Domeniq
 
 **A private home ledger that files your paperwork for you.** Photograph a receipt, a bill, a warranty card or a car document with your phone; Domeniq reads it, works out what it is, and files it. Everything stays on your own computer at home.
 
-This repository holds the Windows releases only: the installer, and the signed release feed that installed copies check for updates. Each release carries the installer as `DomenIQ-Setup.exe` (the stable name, so that the link [`releases/latest/download/DomenIQ-Setup.exe`](https://github.com/StasEdward/domeniq-releases/releases/latest/download/DomenIQ-Setup.exe) always gives the newest) and as `DomenIQ-Setup-<version>.exe`, the same file under its versioned name (what installed copies download when they update), with its SHA-256.
+This repository holds the releases only: the Windows installer, the signed release feed that installed copies check for updates, and the compose file for the Docker image (see [Docker](#docker-linux-server)). Each release carries the installer as `DomenIQ-Setup.exe` (the stable name, so that the link [`releases/latest/download/DomenIQ-Setup.exe`](https://github.com/StasEdward/domeniq-releases/releases/latest/download/DomenIQ-Setup.exe) always gives the newest) and as `DomenIQ-Setup-<version>.exe`, the same file under its versioned name (what installed copies download when they update), with its SHA-256.
 
 ## What you need
 
@@ -63,12 +63,29 @@ What was recorded after the update started is lost.
 
 Windows Settings > Apps > Installed apps > **Domeniq** > Uninstall. The uninstaller asks whether to **also delete your household data**; the answer is No unless you choose Yes. With No, `C:\ProgramData\DomenIQ` stays and a later install finds your household again. Download a backup first if you are not sure.
 
+## Docker (Linux server)
+
+For a Linux server, x86-64 or ARM64 (a NAS, a mini PC, a Raspberry Pi 5), with Docker and its Compose plugin. Each release publishes the image `ghcr.io/stasedward/domeniq` (tags `<version>`, `<major>.<minor>` and `latest`) and attaches its compose file as `docker-compose.yml`.
+
+```bash
+mkdir domeniq && cd domeniq
+curl -fsSLO https://github.com/StasEdward/domeniq-releases/releases/latest/download/docker-compose.yml
+docker compose up -d
+```
+
+Then open `http://<server>:8080/` from a computer on the home network and set Domeniq up at once: until a household exists, the first visitor sets it up. The rest is as on Windows (see First run).
+
+- The container uses the server's own network (host networking), so Domeniq sees the server's address on the home network, gets its secure name `<label>.n.domeniq.app` and listens on the server's ports 8080 (HTTP) and 443 (HTTPS). Open both in the server's firewall for the home network. Other ports, a fixed version or the first screen's language go into a `.env` file next to the compose file; its comments list them. Host networking needs a Linux host: Docker Desktop on Windows or macOS is not supported, use the Windows installer there.
+- Your household lives in the Docker volume `domeniq_domeniq-data`. **Settings > Backup** and the recovery phrase work as on Windows.
+- Update: when a new version is out, the Overview and **Settings** say so (Domeniq checks this repository once a day), and **Settings** shows the command: `docker compose pull && docker compose up -d`. The container does not update itself; the volume stays, and Domeniq upgrades the database when it starts.
+- The image is signed. To check it: `cosign verify ghcr.io/stasedward/domeniq:<version> --certificate-identity-regexp '^https://github.com/StasEdward/HomeVault/' --certificate-oidc-issuer https://token.actions.githubusercontent.com`.
+
 ## Licenses
 
 Domeniq includes, under their own licenses:
 
 - .NET, ASP.NET Core and Entity Framework Core (MIT), SQLite (public domain), ONNX Runtime (MIT), SkiaSharp (MIT), QRCoder (MIT), PdfPig (Apache-2.0).
 - [HebrewOcrNet](https://github.com/StasEdward/HebrewOcrNet), on top of [RapidOcrNet](https://github.com/BobLd/RapidOcrNet) (Apache-2.0).
-- The PaddleOCR Hebrew models of [paddleocr-hebrew](https://github.com/RivoksLab/paddleocr-hebrew) by Rivok Labs (Apache-2.0), downloaded by the installer from this repository's `paddle-models-*` release, which carries their LICENSE and NOTICE. (Maintainers: such a release is never marked latest, `gh release create ... --latest=false`, so that `releases/latest/download/releases.json` stays the newest version's feed.)
+- The PaddleOCR Hebrew models of [paddleocr-hebrew](https://github.com/RivoksLab/paddleocr-hebrew) by Rivok Labs (Apache-2.0), downloaded by the installer from this repository's `paddle-models-*` release, which carries their LICENSE and NOTICE; the Docker image carries the same files and the LICENSE in `/opt/domeniq/models/paddle`. The image also includes Ubuntu packages, among them [Tesseract](https://github.com/tesseract-ocr/tesseract) (Apache-2.0), each with its copyright file in `/usr/share/doc`. (Maintainers: such a release is never marked latest, `gh release create ... --latest=false`, so that `releases/latest/download/releases.json` stays the newest version's feed.)
 
 The license of Domeniq itself has not been chosen yet.
